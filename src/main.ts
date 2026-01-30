@@ -1,11 +1,12 @@
 import "dotenv/config";
-import { refreshAccessToken } from "./oauth.js";
 import { createPost } from "./x.js";
 import { generatePost } from "./content/generator.js";
 
 async function main() {
-  const clientId = requireEnv("X_CLIENT_ID");
-  const refreshToken = requireEnv("X_REFRESH_TOKEN");
+  const apiKey = requireEnv("X_API_KEY");
+  const apiSecret = requireEnv("X_API_SECRET");
+  const accessToken = requireEnv("X_ACCESS_TOKEN");
+  const accessTokenSecret = requireEnv("X_ACCESS_TOKEN_SECRET");
   const slot = parseInt(process.env.SLOT ?? "0", 10);
   const dryRun = process.env.DRY_RUN === "true";
   const hashtagMode = process.env.HASHTAG_MODE ?? "MAX";
@@ -37,25 +38,9 @@ async function main() {
     return;
   }
 
-  // トークン取得
-  console.log("Refreshing access token...");
-  const tokenRes = await refreshAccessToken(clientId, refreshToken);
-
-  // GitHub Actions で refresh_token をローテーションする場合は
-  // ここで新しい refresh_token を Secrets に書き戻す処理が必要。
-  // 今回は refresh_token が変わらない前提で進める。
-  // 変わる場合は GitHub API で Secrets を更新するか、
-  // 別の永続化手段を検討してください。
-  if (tokenRes.refresh_token !== refreshToken) {
-    console.warn(
-      "WARNING: refresh_token has rotated. Update X_REFRESH_TOKEN secret manually or automate rotation.",
-    );
-    console.warn(`New refresh_token: ${tokenRes.refresh_token}`);
-  }
-
   // 投稿
   console.log("Posting to X...");
-  const result = await createPost(tokenRes.access_token, text);
+  const result = await createPost(apiKey, apiSecret, accessToken, accessTokenSecret, text);
   console.log(`Posted successfully! Tweet ID: ${result.id}`);
 }
 
