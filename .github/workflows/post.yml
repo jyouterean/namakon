@@ -1,0 +1,63 @@
+name: Post to X
+
+on:
+  schedule:
+    # JST 08:10 = UTC 23:10 (前日)
+    - cron: "10 23 * * *"
+    # JST 12:10 = UTC 03:10
+    - cron: "10 3 * * *"
+    # JST 20:10 = UTC 11:10
+    - cron: "10 11 * * *"
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: "Slot number (0, 1, or 2)"
+        required: true
+        default: "0"
+      dry_run:
+        description: "Dry run mode"
+        required: false
+        default: "false"
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Determine slot
+        id: slot
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "slot=${{ github.event.inputs.slot }}" >> "$GITHUB_OUTPUT"
+          else
+            CRON="${{ github.event.schedule }}"
+            case "$CRON" in
+              "10 23 * * *") echo "slot=0" >> "$GITHUB_OUTPUT" ;;
+              "10 3 * * *")  echo "slot=1" >> "$GITHUB_OUTPUT" ;;
+              "10 11 * * *") echo "slot=2" >> "$GITHUB_OUTPUT" ;;
+              *)             echo "slot=0" >> "$GITHUB_OUTPUT" ;;
+            esac
+          fi
+
+      - name: Post
+        env:
+          X_CLIENT_ID: ${{ secrets.X_CLIENT_ID }}
+          X_REFRESH_TOKEN: ${{ secrets.X_REFRESH_TOKEN }}
+          X_REDIRECT_URI: ${{ secrets.X_REDIRECT_URI }}
+          SLOT: ${{ steps.slot.outputs.slot }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          HASHTAG_MODE: "MAX"
+          MAX_HASHTAGS: "5"
+          SEED_SALT: ${{ secrets.SEED_SALT }}
+        run: node dist/main.js

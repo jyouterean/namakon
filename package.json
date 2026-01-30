@@ -1,0 +1,20 @@
+{
+  "name": "namakon-bot",
+  "version": "1.0.0",
+  "description": "X auto-posting bot for promoting namakon (fresh concrete) inspector role",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "auth": "npx tsx scripts/auth_pkce.ts",
+    "dry": "DRY_RUN=true node dist/main.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.15.0",
+    "typescript": "^5.5.0"
+  }
+}
